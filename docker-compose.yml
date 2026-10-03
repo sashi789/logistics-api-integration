@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: logistics
       POSTGRES_DB: logistics
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 volumes:
