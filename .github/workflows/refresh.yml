@@ -57,7 +57,13 @@ jobs:
           python -m etl.export | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Build HTML dashboard
-        run: python -m etl.dashboard
+        run: |
+          python -m etl.dashboard
+          mkdir -p site && cp exports/dashboard.html site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -67,3 +73,17 @@ jobs:
             exports/
             mock_api.log
           retention-days: 7
+
+  # publishes the freshly built dashboard to GitHub Pages after every successful refresh
+  deploy:
+    needs: refresh
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
