@@ -1,0 +1,66 @@
+name: Refresh shipment data
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # every 30 minutes (GitHub may delay scheduled runs a few minutes)
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Ignore watermark and re-pull everything"
+        type: boolean
+        default: false
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: logistics
+          POSTGRES_PASSWORD: logistics
+          POSTGRES_DB: logistics
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U logistics" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://logistics:logistics@localhost:5432/logistics
+      MOCK_API_URL: http://127.0.0.1:5050
+      # For real partner APIs these would come from repo secrets, e.g.
+      # FASTFREIGHT_API_KEY: ${{ secrets.FASTFREIGHT_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Start mock partner APIs
+        run: |
+          nohup python -m mock_api.app > mock_api.log 2>&1 &
+          for i in $(seq 1 20); do curl -sf http://127.0.0.1:5050/health && break || sleep 1; done
+
+      - name: Create schema
+        run: python -m etl.init_db
+
+      - name: Run ETL
+        run: python -m etl.run ${{ inputs.full && '--full' || '' }}
+
+      - name: Export reporting views
+        run: |
+          python -m etl.export | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shipment-reports-${{ github.run_id }}
+          path: |
+            exports/
+            mock_api.log
+          retention-days: 7
