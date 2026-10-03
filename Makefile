@@ -1,4 +1,4 @@
-.PHONY: install db-up init-db mock-api etl test export
+.PHONY: install db-up init-db mock-api etl test export dashboard
 install:
 	python -m venv .venv && .venv/bin/pip install -r requirements.txt
 db-up:
@@ -13,3 +13,5 @@ test:
 	pytest -q
 export:
 	python -m etl.export
+dashboard:
+	python -m etl.dashboard   # -> exports/dashboard.html (open it in any browser)

@@ -24,6 +24,7 @@ make init-db          # tables + views
 make mock-api &       # fake partner APIs on :5050
 make etl              # run twice to see the incremental load: 2nd run fetches only changes
 make export           # CSVs of the reporting views -> exports/
+make dashboard        # self-contained HTML dashboard -> exports/dashboard.html
 pytest -q             # unit tests; set TEST_DATABASE_URL (throwaway DB!) for the DB test too
 ```
 
@@ -47,6 +48,10 @@ Try `MOCK_FLAKY_RATE=0.3 make mock-api` to see retries/backoff working, or chang
 - `refresh.yml` – cron `*/30 * * * *` + manual trigger (`full` option). Spins up Postgres + the mock API, runs the ETL, writes the views to the job summary and uploads CSVs as an artifact.
 
 **Limitation:** an Actions runner is ephemeral, so the Postgres inside it is rebuilt each run (the job is a *demo of the scheduled refresh*, not a durable store). To persist data, point `DATABASE_URL` at a hosted Postgres (Neon / Supabase free tier) via a repo secret and drop the service container. Also, GitHub can delay scheduled runs by several minutes, and the schedule only fires from the default branch.
+
+## Dashboard
+
+`python -m etl.dashboard` turns the reporting views into one self-contained HTML file (inline SVG, no JS libraries, no BI tool, works offline, light/dark aware). It shows KPI tiles, outcomes by partner, time to deliver, feed health against the 30-minute SLA, daily event volume, the most overdue shipments and recent runs. Each chart has a "view as table" fallback. The Actions refresh job builds it and uploads it with the CSVs.
 
 ## Docs
 
