@@ -51,7 +51,6 @@ Try `MOCK_FLAKY_RATE=0.3 make mock-api` to see retries/backoff working, or chang
 
 ## Dashboard
 
-**Live:** https://sashi789.github.io/logistics-api-integration/ (rebuilt and redeployed by the refresh workflow every 30 minutes; data is synthetic).
 
 `python -m etl.dashboard` turns the reporting views into one self-contained HTML file (inline SVG, no JS libraries, no BI tool, works offline, light/dark aware). It shows KPI tiles, outcomes by partner, time to deliver, feed health against the 30-minute SLA, daily event volume, the most overdue shipments and recent runs. Each chart has a "view as table" fallback. The Actions refresh job builds it, deploys it to GitHub Pages, and uploads it with the CSVs.
 
